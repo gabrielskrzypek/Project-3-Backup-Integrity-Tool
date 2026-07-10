@@ -1,6 +1,7 @@
 from backup_integrity_tool import (
     calculate_sha256,
     get_file_hashes,
+    compare_directories,
 )
 
 
@@ -49,3 +50,72 @@ def test_get_file_hashes_ignores_directories(tmp_path):
 
     assert "Empty_folder" not in result
     assert result == {}
+
+
+def test_compare_directories_missing_file(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    (source_path / "Sample.txt").write_text("Only in source")
+    
+    result = compare_directories(source_path, backup_path)
+    
+    assert result["ok"] == []
+    assert result["missing_in_backup"] == ["Sample.txt"]
+    assert result["extra_in_backup"] == []
+    assert result["modified"] == []
+
+def test_compare_directories_ok(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    (source_path / "Sample.txt").write_text("Same content")
+    (backup_path / "Sample.txt").write_text("Same content")
+
+    result = compare_directories(source_path, backup_path)
+    
+    assert result["ok"] == ["Sample.txt"]
+    assert result["missing_in_backup"] == []
+    assert result["extra_in_backup"] == []
+    assert result["modified"] == []
+
+
+def test_compare_directories_modified(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    (source_path / "Sample.txt").write_text("Same content")
+    (backup_path / "Sample.txt").write_text("Different content")
+
+    result = compare_directories(source_path, backup_path)
+    
+    assert result["ok"] == []
+    assert result["missing_in_backup"] == []
+    assert result["extra_in_backup"] == []
+    assert result["modified"] == ["Sample.txt"]
+
+
+def test_compare_directories_extra(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    (backup_path / "Extra.txt").write_text("Extra in backup")
+
+    result = compare_directories(source_path, backup_path)
+    
+    assert result["ok"] == []
+    assert result["missing_in_backup"] == []
+    assert result["extra_in_backup"] == ["Extra.txt"]
+    assert result["modified"] == []
