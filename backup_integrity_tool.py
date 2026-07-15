@@ -82,10 +82,67 @@ def compare_directories(source_path, backup_path):
 
     return results
 
+def generate_report(results, source_path, backup_path):
+    """
+    Generate a report using the results dictionary and source/backup paths.
+
+    Args:
+        results: Dictionary returned by compare_directories().
+        source_path: Path to the source directory.
+        backup_path: Path to the backup directory.
+
+    Returns:
+        Report formatted as a string.
+    """
+    source_path = Path(source_path)
+    backup_path = Path(backup_path)
+
+    lines = []
+
+    lines.append("Backup Integrity Tool")
+    lines.append("=====================")
+    lines.append("")
+    lines.append(f"Source: {source_path}")
+    lines.append(f"Backup: {backup_path}")
+    lines.append("")
+    lines.append("Summary:")
+    lines.append(f"- OK files: {len(results['ok'])}")
+    lines.append(
+        f"- Missing in backup: {len(results['missing_in_backup'])}"
+    )
+    lines.append(
+        f"- Extra in backup: {len(results['extra_in_backup'])}"
+    )
+    lines.append(f"- Modified files: {len(results['modified'])}")
+    lines.append("")
+    lines.append("Details:")
+    lines.append("")
+
+    categories = {
+        "OK files": results["ok"],
+        "Missing in backup": results["missing_in_backup"],
+        "Extra in backup": results["extra_in_backup"],
+        "Modified files": results["modified"],
+    }
+
+    for title, file_paths in categories.items():
+        lines.append(f"{title}:")
+
+        if file_paths:
+            for file_path in file_paths:
+                lines.append(f"- {file_path}")
+        else:
+            lines.append("- None")
+
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
 
 
 def main():
-    print("Backup Integrity Tool")
+    result = compare_directories("source_data", "backup_data")
+    report = generate_report(result, "source_data", "backup_data")
+    print(report)
 
 
 if __name__ == "__main__":

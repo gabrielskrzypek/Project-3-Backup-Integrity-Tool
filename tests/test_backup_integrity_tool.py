@@ -2,6 +2,7 @@ from backup_integrity_tool import (
     calculate_sha256,
     get_file_hashes,
     compare_directories,
+    generate_report,
 )
 
 
@@ -119,3 +120,59 @@ def test_compare_directories_extra(tmp_path):
     assert result["missing_in_backup"] == []
     assert result["extra_in_backup"] == ["Extra.txt"]
     assert result["modified"] == []
+
+
+def test_generate_report_all_check(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    results = {
+        "ok": ["ok_sample.txt"],
+        "missing_in_backup": ["missing_sample.txt"],
+        "extra_in_backup": ["extra_sample.txt"],
+        "modified": ["modified_sample.txt"],
+    }
+
+    report = generate_report(results, source_path, backup_path)
+
+    assert "Backup Integrity Tool" in report
+    assert "=====================" in report
+    assert f"Source: {source_path}" in report
+    assert f"Backup: {backup_path}" in report
+
+    assert "Summary:" in report
+    assert "- OK files: 1" in report
+    assert "- Missing in backup: 1" in report
+    assert "- Extra in backup: 1" in report
+    assert "- Modified files: 1" in report
+
+    assert "Details:" in report
+
+    assert "OK files:" in report
+    assert "- ok_sample.txt" in report
+
+    assert "Missing in backup:" in report
+    assert "- missing_sample.txt" in report
+
+    assert "Extra in backup:" in report
+    assert "- extra_sample.txt" in report
+
+    assert "Modified files:" in report
+    assert "- modified_sample.txt" in report
+
+
+
+def test_generate_report_none_for_empty_categories(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    results = {
+        "ok": [],
+        "missing_in_backup": [],
+        "extra_in_backup": [],
+        "modified": [],
+    }
+
+    report = generate_report(results, source_path, backup_path)
+
+    assert report.count("- None") == 4
