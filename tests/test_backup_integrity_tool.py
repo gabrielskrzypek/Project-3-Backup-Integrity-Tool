@@ -1,9 +1,16 @@
+from pathlib import Path
+import re
+
+import pytest
+
 from backup_integrity_tool import (
     calculate_sha256,
     get_file_hashes,
     compare_directories,
     generate_report,
+    validate_directory,
 )
+
 
 
 def test_calculate_sha256_same_content(tmp_path):
@@ -46,7 +53,6 @@ def test_get_file_hashes_ignores_directories(tmp_path):
     nested_folder_path = tmp_path / "Empty_folder"
     nested_folder_path.mkdir()
 
-
     result = get_file_hashes(tmp_path)
 
     assert "Empty_folder" not in result
@@ -68,6 +74,7 @@ def test_compare_directories_missing_file(tmp_path):
     assert result["missing_in_backup"] == ["Sample.txt"]
     assert result["extra_in_backup"] == []
     assert result["modified"] == []
+
 
 def test_compare_directories_ok(tmp_path):
     source_path = tmp_path / "Source"
@@ -161,7 +168,6 @@ def test_generate_report_all_check(tmp_path):
     assert "- modified_sample.txt" in report
 
 
-
 def test_generate_report_none_for_empty_categories(tmp_path):
     source_path = tmp_path / "Source"
     backup_path = tmp_path / "Backup"
@@ -176,3 +182,42 @@ def test_generate_report_none_for_empty_categories(tmp_path):
     report = generate_report(results, source_path, backup_path)
 
     assert report.count("- None") == 4
+
+
+def test_validate_directory_returns_path(tmp_path):
+    directory_path = tmp_path / "Source"
+    directory_path.mkdir()
+
+    result = validate_directory(directory_path, "Source")
+
+    assert result == directory_path
+    assert isinstance(result, Path)
+
+
+def test_validate_directory_raises_if_path_does_not_exist(tmp_path):
+    directory_path = tmp_path / "nonexistent"
+
+    expected_message = (
+        f"Source directory does not exist: {directory_path}"
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match=re.escape(expected_message),
+    ):
+        validate_directory(directory_path, "Source")
+
+
+def test_validate_directory_raises_if_path_is_not_directory(tmp_path):
+    file_path = tmp_path / "sample.txt"
+    file_path.write_text("content")
+    expected_message = (
+        f"Source path is not a directory: {file_path}"
+    )
+
+    with pytest.raises(
+        NotADirectoryError,
+        match=re.escape(expected_message),
+    ):
+        validate_directory(file_path, "Source")
+    
