@@ -4,10 +4,6 @@ Backup Integrity Tool is a Python command-line application that checks whether a
 
 It compares files recursively using relative paths and SHA256 hashes. The tool can detect which files are identical, missing from the backup, extra in the backup, or modified.
 
-# Current status
-
-Work in progress.
-
 Currently implemented:
 
 - Initial project structure.
@@ -20,14 +16,21 @@ Currently implemented:
   - files missing from backup,
   - extra files in backup,
   - modified files.
-- Basic pytest tests for hash calculation, file scanning, and directory comparison.
+- Text report generation with:
+  - source and backup paths,
+  - summary counts,
+  - detailed file lists,
+  - `None` for empty categories.
+- Pytest tests for hash calculation, recursive scanning, directory comparison, and report generation.
 
 Planned features:
 
-- Terminal report generation.
+- CLI arguments with `argparse`.
+- Path validation and error handling.
 - Optional report saving.
 - Dry-run mode.
-- Optional backup creation/update mode.
+- Optional backup creation and update mode.
+- Safe overwrite control.
 
 ## Technologies
 
