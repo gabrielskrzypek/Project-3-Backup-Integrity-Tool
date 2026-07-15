@@ -28,7 +28,10 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
 - Optional overwrite of modified backup files with `--overwrite`.
 - `--dry-run` mode for previewing copy and overwrite actions.
 - Verification after backup updates.
-- 18 pytest tests covering:
+- Validation of incompatible CLI options:
+  - `--overwrite` requires `--create-backup`.
+  - `--dry-run` requires `--create-backup`.
+- 21 pytest tests covering:
   - hash calculation,
   - recursive scanning,
   - directory comparison,
@@ -37,11 +40,12 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
   - missing-file copying,
   - subdirectory creation,
   - overwrite behavior,
-  - dry-run behavior.
+  - dry-run behavior,
+  - CLI option validation.
 
 # Planned features:
 
-- Validation of incompatible CLI argument combinations.
+- Cleaner CLI error messages without full tracebacks.
 - Optional handling of extra backup files.
 - Final README usage examples.
 - Clean installation and execution test from a fresh clone.
@@ -51,4 +55,7 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
 - Python
 - pathlib
 - hashlib
+- argparse
+- datetime
+- shutil
 - pytest
