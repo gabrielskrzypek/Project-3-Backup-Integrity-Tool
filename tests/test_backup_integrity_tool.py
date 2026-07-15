@@ -1,3 +1,4 @@
+from argparse import Namespace
 from pathlib import Path
 import re
 
@@ -11,6 +12,7 @@ from backup_integrity_tool import (
     validate_directory,
     copy_missing_files,
     overwrite_modified_files,
+    validate_cli_options,
 )
 
 
@@ -329,7 +331,6 @@ def test_overwrite_modified_files_replaces_backup_file(tmp_path):
     )
 
 
-
 def test_overwrite_modified_files_dry_run_does_not_modify_backup(tmp_path):
     source_path = tmp_path / "Source"
     backup_path = tmp_path / "Backup"
@@ -352,3 +353,41 @@ def test_overwrite_modified_files_dry_run_does_not_modify_backup(tmp_path):
 
     assert overwritten_files == ["modified.txt"]
     assert backup_file_path.read_text() == "Old backup content"
+
+
+def test_validate_cli_options_accepts_valid_combination():
+    args = Namespace(
+        create_backup=True,
+        overwrite=True,
+        dry_run=True,
+    )
+
+    validate_cli_options(args)
+
+
+def test_validate_cli_options_raises_if_overwrite_without_create_backup():
+    args = Namespace(
+        create_backup=False,
+        overwrite=True,
+        dry_run=False,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("--overwrite requires --create-backup."),
+    ):
+        validate_cli_options(args)
+
+
+def test_validate_cli_options_raises_if_dry_run_without_create_backup():
+    args = Namespace(
+        create_backup=False,
+        overwrite=False,
+        dry_run=True,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("--dry-run requires --create-backup."),
+    ):
+        validate_cli_options(args)

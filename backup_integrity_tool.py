@@ -329,10 +329,31 @@ def save_report(report, output_path, source_path, backup_path):
     filepath.write_text(report, encoding="utf-8")
 
     return filepath
-    
+
+
+def validate_cli_options(args):
+    """
+    Validate combinations of command-line options.
+
+    Args:
+        args: Namespace returned by parse_args().
+
+    Raises:
+        ValueError: If incompatible command-line options are used.
+    """
+    if args.overwrite and not args.create_backup:
+        raise ValueError(
+            "--overwrite requires --create-backup."
+        )
+
+    if args.dry_run and not args.create_backup:
+        raise ValueError(
+            "--dry-run requires --create-backup."
+        )
 
 def main():
     args = parse_args()
+    validate_cli_options(args)
 
     source_path = validate_directory(args.source, "Source")
     backup_path = validate_directory(args.backup, "Backup")
