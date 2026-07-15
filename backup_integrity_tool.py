@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import argparse
 import hashlib
+import shutil
 
 DEFAULT_OUTPUT_PATH = Path("output_data")
 
@@ -33,6 +34,24 @@ def parse_args():
         "--output",
         default=DEFAULT_OUTPUT_PATH,
         help="Directory where report files will be saved.",
+    )
+
+    parser.add_argument(
+        "--create-backup",
+        action="store_true",
+        help="Copy files missing from the backup directory.",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show which files would be copied without making changes.",
+    )   
+
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite modified files in the backup with source versions.",
     )
 
     return parser.parse_args()
@@ -118,6 +137,110 @@ def compare_directories(source_path, backup_path):
             results["extra_in_backup"].append(relative_file_path)
 
     return results
+
+
+def validate_directory(directory_path, directory_name):
+    """
+    Validate that a path exists and is a directory.
+
+    Args:
+        directory_path: Path to validate.
+        directory_name: Human-readable name used in error messages.
+
+    Raises:
+        FileNotFoundError: If the path does not exist.
+        NotADirectoryError: If the path is not a directory.
+    """
+    directory_path = Path(directory_path)
+
+    if not directory_path.exists():
+        raise FileNotFoundError(
+            f"{directory_name} directory does not exist: {directory_path}"
+        )
+    
+    if not directory_path.is_dir():
+        raise NotADirectoryError(
+            f"{directory_name} path is not a directory: {directory_path}"
+        )
+    
+    return directory_path
+
+
+def copy_missing_files(source_path, backup_path, missing_files, dry_run=False,):
+    """
+    Copy missing files from the backup directory.
+
+    Args:
+        source_path: Path to the source directory
+        backup_path: Path to the backup directory
+        missing_files: List of relative paths missing from the backup.
+        dry_run: If True, show planned actions without copying files.
+
+    Returns:
+        List of relative paths copied or planned for copying.
+    """
+    source_path = Path(source_path)
+    backup_path = Path(backup_path)
+
+    copied_files = []
+
+    for relative_file_path in missing_files:
+        source_file_path = source_path / relative_file_path
+        backup_file_path = backup_path / relative_file_path
+
+        copied_files.append(relative_file_path)
+
+        if dry_run:
+            continue
+
+        backup_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy2(
+            source_file_path,
+            backup_file_path,
+        )
+
+    return copied_files
+
+
+def overwrite_modified_files(
+    source_path,
+    backup_path,
+    modified_files,
+    dry_run=False,
+):
+    """
+    Overwrite modified backup files with the corresponding source files.
+
+    Args:
+        source_path: Path to the source directory.
+        backup_path: Path to the backup directory.
+        modified_files: List of modified relative file paths.
+        dry_run: If True, show planned actions without overwriting files.
+
+    Returns:
+        List of relative paths overwritten or planned for overwriting.
+    """
+    source_path = Path(source_path)
+    backup_path = Path(backup_path)
+
+    overwritten_files = []
+
+    for relative_file_path in modified_files:
+        source_file_path = source_path / relative_file_path
+        backup_file_path = backup_path / relative_file_path
+
+        overwritten_files.append(relative_file_path)
+
+        if dry_run:
+            continue
+
+        shutil.copy2(
+            source_file_path,
+            backup_file_path,
+        )
+
+    return overwritten_files
 
 
 def generate_report(results, source_path, backup_path):
@@ -206,33 +329,6 @@ def save_report(report, output_path, source_path, backup_path):
     filepath.write_text(report, encoding="utf-8")
 
     return filepath
-
-
-def validate_directory(directory_path, directory_name):
-    """
-    Validate that a path exists and is a directory.
-
-    Args:
-        directory_path: Path to validate.
-        directory_name: Human-readable name used in error messages.
-
-    Raises:
-        FileNotFoundError: If the path does not exist.
-        NotADirectoryError: If the path is not a directory.
-    """
-    directory_path = Path(directory_path)
-
-    if not directory_path.exists():
-        raise FileNotFoundError(
-            f"{directory_name} directory does not exist: {directory_path}"
-        )
-    
-    if not directory_path.is_dir():
-        raise NotADirectoryError(
-            f"{directory_name} path is not a directory: {directory_path}"
-        )
-    
-    return directory_path
     
 
 def main():
@@ -247,6 +343,76 @@ def main():
     
     print(report)
 
+    if args.create_backup:
+        copied_files = copy_missing_files(
+            source_path,
+            backup_path,
+            results["missing_in_backup"],
+            dry_run=args.dry_run,
+        )
+        
+        overwritten_files = []
+
+        if args.overwrite:
+            overwritten_files = overwrite_modified_files(
+                source_path,
+                backup_path,
+                results["modified"],
+                dry_run=args.dry_run,
+            )
+    print("")
+
+    if args.dry_run:
+        print("Dry-run mode: no files were modified.")
+
+        if copied_files:
+            print("Files that would be copied:")
+            for relative_file_path in copied_files:
+                print(f"- {relative_file_path}")
+        else:
+            print("No missing files to copy")
+            
+        if args.overwrite:
+            if overwritten_files:
+                print("Files that would be overwritten:")
+                for relative_file_path in overwritten_files:
+                    print(f"- {relative_file_path}")
+            else:
+                print("No modified files to overwrite.")
+
+    else:
+        if copied_files:
+            print("Copied files:")
+            for relative_file_path in copied_files:
+                print(f"- {relative_file_path}")
+        else:
+            print("No missing files to copy.")
+        
+        if args.overwrite:
+            if overwritten_files:
+                print("Overwritten files:")
+                for relative_file_path in overwritten_files:
+                    print(f"- {relative_file_path}")
+            else:
+                print("No modified files to overwrite.")
+
+        if copied_files or overwritten_files:
+            results = compare_directories(
+                source_path,
+                backup_path,
+            )
+
+            report = generate_report(
+                results,
+                source_path,
+                backup_path,
+            )
+
+            print("")
+            print("Verification after backup update:")
+            print("")
+            print(report)
+
     if args.no_save:
         print("")
         print("Report was not saved.")
@@ -259,7 +425,6 @@ def main():
         )
         print("")
         print(f"Report saved to: {save_report_path}")
-
 
 if __name__ == "__main__":
     main()

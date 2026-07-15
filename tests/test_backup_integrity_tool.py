@@ -9,6 +9,8 @@ from backup_integrity_tool import (
     compare_directories,
     generate_report,
     validate_directory,
+    copy_missing_files,
+    overwrite_modified_files,
 )
 
 
@@ -220,4 +222,133 @@ def test_validate_directory_raises_if_path_is_not_directory(tmp_path):
         match=re.escape(expected_message),
     ):
         validate_directory(file_path, "Source")
-    
+
+
+def test_copy_missing_files_copies_file(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    source_file_path = source_path / "missing.txt"
+    source_file_path.write_text("Missing file content")
+
+    copied_files = copy_missing_files(
+        source_path,
+        backup_path,
+        ["missing.txt"],
+    )
+
+    backup_file_path = backup_path / "missing.txt"
+
+    assert copied_files == ["missing.txt"]
+    assert backup_file_path.exists()
+    assert backup_file_path.read_text() == "Missing file content"
+    assert calculate_sha256(source_file_path) == calculate_sha256(
+        backup_file_path
+    )
+
+
+def test_copy_missing_files_creates_parent_directories(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    source_nested_path = source_path / "documents"
+    source_nested_path.mkdir()
+
+    source_file_path = source_nested_path / "manual.txt"
+    source_file_path.write_text("Manual content")
+
+    copied_files = copy_missing_files(
+        source_path,
+        backup_path,
+        ["documents/manual.txt"],
+    )
+
+    backup_file_path = backup_path / "documents" / "manual.txt"
+
+    assert copied_files == ["documents/manual.txt"]
+    assert backup_file_path.exists()
+    assert backup_file_path.read_text() == "Manual content"
+    assert calculate_sha256(source_file_path) == calculate_sha256(
+        backup_file_path
+    )
+
+
+def test_copy_missing_files_dry_run_does_not_copy_file(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    source_file_path = source_path / "missing.txt"
+    source_file_path.write_text("Missing file content")
+
+    copied_files = copy_missing_files(
+        source_path,
+        backup_path,
+        ["missing.txt"],
+        dry_run=True,
+    )
+
+    backup_file_path = backup_path / "missing.txt"
+
+    assert copied_files == ["missing.txt"]
+    assert not backup_file_path.exists()
+
+
+def test_overwrite_modified_files_replaces_backup_file(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    source_file_path = source_path / "modified.txt"
+    backup_file_path = backup_path / "modified.txt"
+
+    source_file_path.write_text("Current source content")
+    backup_file_path.write_text("Old backup content")
+
+    overwritten_files = overwrite_modified_files(
+        source_path,
+        backup_path,
+        ["modified.txt"],
+    )
+
+    assert overwritten_files == ["modified.txt"]
+    assert backup_file_path.exists()
+    assert backup_file_path.read_text() == "Current source content"
+    assert calculate_sha256(source_file_path) == calculate_sha256(
+        backup_file_path
+    )
+
+
+
+def test_overwrite_modified_files_dry_run_does_not_modify_backup(tmp_path):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    source_file_path = source_path / "modified.txt"
+    backup_file_path = backup_path / "modified.txt"
+
+    source_file_path.write_text("Current source content")
+    backup_file_path.write_text("Old backup content")
+
+    overwritten_files = overwrite_modified_files(
+        source_path,
+        backup_path,
+        ["modified.txt"],
+        dry_run=True,
+    )
+
+    assert overwritten_files == ["modified.txt"]
+    assert backup_file_path.read_text() == "Old backup content"
