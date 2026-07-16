@@ -45,10 +45,10 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
   - dry-run behavior,
   - CLI option validation,
   - clean CLI error handling.
+- Readme usage examples.
 
 # Planned features:
 
-- Final README usage examples.
 - Clean installation and execution test from a fresh clone.
 
 ## Technologies

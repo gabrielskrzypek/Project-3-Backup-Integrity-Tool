@@ -364,12 +364,12 @@ def main():
     except (ValueError, FileNotFoundError, NotADirectoryError) as error:
         print(f"Error: {error}", file=sys.stderr)
         raise SystemExit(1)
-    
+
     output_path = Path(args.output)
 
     results = compare_directories(source_path, backup_path)
     report = generate_report(results, source_path, backup_path)
-    
+
     print(report)
 
     if args.create_backup:
@@ -379,7 +379,7 @@ def main():
             results["missing_in_backup"],
             dry_run=args.dry_run,
         )
-        
+
         overwritten_files = []
 
         if args.overwrite:
@@ -389,71 +389,73 @@ def main():
                 results["modified"],
                 dry_run=args.dry_run,
             )
-    print("")
 
-    if args.dry_run:
-        print("Dry-run mode: no files were modified.")
+        print("")
 
-        if copied_files:
-            print("Files that would be copied:")
-            for relative_file_path in copied_files:
-                print(f"- {relative_file_path}")
-        else:
-            print("No missing files to copy")
-            
-        if args.overwrite:
-            if overwritten_files:
-                print("Files that would be overwritten:")
-                for relative_file_path in overwritten_files:
+        if args.dry_run:
+            print("Dry-run mode: no files were modified.")
+
+            if copied_files:
+                print("Files that would be copied:")
+                for relative_file_path in copied_files:
                     print(f"- {relative_file_path}")
             else:
-                print("No modified files to overwrite.")
+                print("No missing files to copy.")
 
-    else:
-        if copied_files:
-            print("Copied files:")
-            for relative_file_path in copied_files:
-                print(f"- {relative_file_path}")
+            if args.overwrite:
+                if overwritten_files:
+                    print("Files that would be overwritten:")
+                    for relative_file_path in overwritten_files:
+                        print(f"- {relative_file_path}")
+                else:
+                    print("No modified files to overwrite.")
+
         else:
-            print("No missing files to copy.")
-        
-        if args.overwrite:
-            if overwritten_files:
-                print("Overwritten files:")
-                for relative_file_path in overwritten_files:
+            if copied_files:
+                print("Copied files:")
+                for relative_file_path in copied_files:
                     print(f"- {relative_file_path}")
             else:
-                print("No modified files to overwrite.")
+                print("No missing files to copy.")
 
-        if copied_files or overwritten_files:
-            results = compare_directories(
-                source_path,
-                backup_path,
-            )
+            if args.overwrite:
+                if overwritten_files:
+                    print("Overwritten files:")
+                    for relative_file_path in overwritten_files:
+                        print(f"- {relative_file_path}")
+                else:
+                    print("No modified files to overwrite.")
 
-            report = generate_report(
-                results,
-                source_path,
-                backup_path,
-            )
+            if copied_files or overwritten_files:
+                results = compare_directories(
+                    source_path,
+                    backup_path,
+                )
 
-            print("")
-            print("Verification after backup update:")
-            print("")
-            print(report)
+                report = generate_report(
+                    results,
+                    source_path,
+                    backup_path,
+                )
+
+                print("")
+                print("Verification after backup update:")
+                print("")
+                print(report)
 
     if args.no_save:
         print("")
         print("Report was not saved.")
     else:
-        save_report_path = save_report (
+        saved_report_path = save_report(
             report,
             output_path,
             source_path,
             backup_path,
         )
+
         print("")
-        print(f"Report saved to: {save_report_path}")
+        print(f"Report saved to: {saved_report_path}")
 
 if __name__ == "__main__":
     main()
