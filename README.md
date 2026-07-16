@@ -48,7 +48,6 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
 
 # Planned features:
 
-- Optional handling of extra backup files.
 - Final README usage examples.
 - Clean installation and execution test from a fresh clone.
 
@@ -61,3 +60,128 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
 - datetime
 - shutil
 - pytest
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone git@github.com:gabrielskrzypek/Backup-Integrity-Tool.git
+cd Backup-Integrity-Tool
+```
+
+Create and activate a virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Install development dependencies:
+
+```bash
+pip install -r dev-requirements.txt
+```
+
+## Usage
+
+Compare a source directory with a backup directory:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data
+```
+
+Run without saving a report:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data \
+  --no-save
+```
+
+Save reports in a custom directory:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data \
+  --output reports
+```
+
+Copy files missing from the backup:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data \
+  --create-backup
+```
+
+Preview backup changes without modifying files:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data \
+  --create-backup \
+  --dry-run \
+  --no-save
+```
+
+Copy missing files and overwrite modified backup files:
+
+```bash
+python backup_integrity_tool.py \
+  --source source_data \
+  --backup backup_data \
+  --create-backup \
+  --overwrite
+```
+
+Display the CLI help:
+
+```bash
+python backup_integrity_tool.py --help
+```
+
+## Report categories
+
+The tool classifies files into four categories:
+
+- `OK`: the file exists in both directories and has the same SHA256 hash.
+- `MISSING_IN_BACKUP`: the file exists in the source but not in the backup.
+- `EXTRA_IN_BACKUP`: the file exists in the backup but not in the source.
+- `MODIFIED`: the file exists in both directories, but its SHA256 hashes are different.
+
+## Safety
+
+- Extra files in the backup are reported but never deleted.
+- Modified files are not replaced unless `--overwrite` is used.
+- `--dry-run` previews copy and overwrite actions without modifying files.
+- Invalid CLI option combinations are rejected before file operations begin.
+- The directories are compared again after a real backup update.
+
+## Running tests
+
+Run the complete test suite from the project root:
+
+```bash
+python -m pytest -v
+```
+
+The current test suite contains 23 tests covering:
+
+- SHA256 hash calculation.
+- Recursive directory scanning.
+- Directory comparison.
+- Report generation.
+- Path validation.
+- Missing-file copying.
+- Subdirectory creation.
+- Overwrite behavior.
+- Dry-run behavior.
+- CLI option validation.
+- Clean CLI error handling.
