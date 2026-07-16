@@ -47,9 +47,6 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
   - clean CLI error handling.
 - Readme usage examples.
 
-# Planned features:
-
-- Clean installation and execution test from a fresh clone.
 
 ## Technologies
 
@@ -185,3 +182,7 @@ The current test suite contains 23 tests covering:
 - Dry-run behavior.
 - CLI option validation.
 - Clean CLI error handling.
+
+## Project status
+
+Completed.
