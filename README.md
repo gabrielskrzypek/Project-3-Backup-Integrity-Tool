@@ -31,7 +31,9 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
 - Validation of incompatible CLI options:
   - `--overwrite` requires `--create-backup`.
   - `--dry-run` requires `--create-backup`.
-- 21 pytest tests covering:
+- Clean CLI error messages without full tracebacks.
+- Errors are written to `stderr` and return exit code `1`.
+- 23 pytest tests covering:
   - hash calculation,
   - recursive scanning,
   - directory comparison,
@@ -41,11 +43,11 @@ It compares files recursively using relative paths and SHA256 hashes. The tool c
   - subdirectory creation,
   - overwrite behavior,
   - dry-run behavior,
-  - CLI option validation.
+  - CLI option validation,
+  - clean CLI error handling.
 
 # Planned features:
 
-- Cleaner CLI error messages without full tracebacks.
 - Optional handling of extra backup files.
 - Final README usage examples.
 - Clean installation and execution test from a fresh clone.

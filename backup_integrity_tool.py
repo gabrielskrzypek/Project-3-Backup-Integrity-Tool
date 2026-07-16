@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import shutil
+import sys
 
 DEFAULT_OUTPUT_PATH = Path("output_data")
 
@@ -353,10 +354,17 @@ def validate_cli_options(args):
 
 def main():
     args = parse_args()
-    validate_cli_options(args)
 
-    source_path = validate_directory(args.source, "Source")
-    backup_path = validate_directory(args.backup, "Backup")
+    try:
+        validate_cli_options(args)
+
+        source_path = validate_directory(args.source, "Source")
+        backup_path = validate_directory(args.backup, "Backup")
+
+    except (ValueError, FileNotFoundError, NotADirectoryError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        raise SystemExit(1)
+    
     output_path = Path(args.output)
 
     results = compare_directories(source_path, backup_path)

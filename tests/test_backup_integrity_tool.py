@@ -13,6 +13,7 @@ from backup_integrity_tool import (
     copy_missing_files,
     overwrite_modified_files,
     validate_cli_options,
+    main,
 )
 
 
@@ -391,3 +392,70 @@ def test_validate_cli_options_raises_if_dry_run_without_create_backup():
         match=re.escape("--dry-run requires --create-backup."),
     ):
         validate_cli_options(args)
+
+def test_main_shows_clean_error_for_missing_source(monkeypatch, capsys, tmp_path):
+    
+    backup_path = tmp_path / "Backup"
+    backup_path.mkdir()
+
+    nonexistent_source = tmp_path / "nonexistent"
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "backup_integrity_tool.py",
+            "--source",
+            str(nonexistent_source),
+            "--backup",
+            str(backup_path),
+            "--no-save",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as error:
+        main()
+
+    captured = capsys.readouterr()
+
+    assert error.value.code == 1
+    assert (
+        f"Error: Source directory does not exist: {nonexistent_source}"
+        in captured.err
+    )
+    assert "Traceback" not in captured.err
+
+
+def test_main_shows_clean_error_for_overwrite_without_create_backup(
+    monkeypatch,
+    capsys,
+    tmp_path,
+):
+    source_path = tmp_path / "Source"
+    backup_path = tmp_path / "Backup"
+
+    source_path.mkdir()
+    backup_path.mkdir()
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "backup_integrity_tool.py",
+            "--source",
+            str(source_path),
+            "--backup",
+            str(backup_path),
+            "--overwrite",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as error:
+        main()
+
+    captured = capsys.readouterr()
+
+    assert error.value.code == 1
+    assert (
+        "Error: --overwrite requires --create-backup."
+        in captured.err
+    )
+    assert "Traceback" not in captured.err
